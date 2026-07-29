@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual Environment
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Model checkpoints
+models/checkpoints/
+
+# FAISS indexes
+*.index
+
+# Neo4j databases
+neo4j/
+
+# Streamlit cache
+.streamlit/
+
+# macOS/Linux
+.DS_Store
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Build files
+build/
+dist/
+*.egg-info/

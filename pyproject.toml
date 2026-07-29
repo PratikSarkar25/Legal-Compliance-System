@@ -1,0 +1,21 @@
+[project]
+name = "legal-compliance-system"
+version = "0.1.0"
+description = "AI-powered Legal Compliance System using Modern NLP, Knowledge Graphs, and Retrieval-Augmented Generation (RAG)"
+authors = [
+    { name = "Pratik Sarkar", email = "datapratik045@gmail.com" }
+]
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
