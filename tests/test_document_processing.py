@@ -16,7 +16,9 @@ def test_document_processing_pipeline():
 
     assert len(document.pages) > 0
 
-    assert document.metadata.page_count == len(document.pages)
+    #assert document.metadata.page_count == len(document.pages)
+    
+    assert document.metadata.num_pages == len(document.pages)
 
     assert len(document.full_cleaned_text) > 0
 

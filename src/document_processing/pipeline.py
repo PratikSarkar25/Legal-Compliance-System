@@ -54,9 +54,21 @@ class DocumentProcessingPipeline:
         # Step 3: Clean each page
         cleaned_pages = []
 
-        for page in pages:
+        #for page in pages:
+
+        #   page.cleaned_text = self.cleaner.clean_page_text(page.text)
+
+        #    cleaned_pages.append(page)
+
+        for i, page in enumerate(pages):
+
+            print(f"\nPage {i+1}")
+            print("Raw text length:", len(page.text))
+            print("First 100 chars:", repr(page.text[:100]))
 
             page.cleaned_text = self.cleaner.clean_page_text(page.text)
+
+            print("Cleaned length:", len(page.cleaned_text))
 
             cleaned_pages.append(page)
 

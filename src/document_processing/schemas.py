@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+from pathlib import Path
 
 
 class DocumentMetadata(BaseModel):
@@ -75,7 +76,7 @@ class ProcessedDocument(BaseModel):
         description="Name of the PDF file."
     )
 
-    file_path: str = Field(
+    file_path: Path = Field(
         ...,
         description="Absolute or relative path of the PDF."
     )
