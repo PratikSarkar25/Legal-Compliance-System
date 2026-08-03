@@ -13,7 +13,11 @@ from src.document_processing.schemas import ProcessedDocument
 from src.legal_nlp.config import LegalNLPConfig
 from src.legal_nlp.loader import ModelLoader
 from src.legal_nlp.prompts.loader import load_cuad_questions
-from src.legal_nlp.schemas import DetectedClause
+#from src.legal_nlp.schemas import DetectedClause
+from src.legal_nlp.schemas import (
+    ClauseSpan,
+    DetectedClause,
+)
 from src.legal_nlp.exceptions import ClauseDetectionError
 from src.legal_nlp.utils import chunk_text_with_stride
 
@@ -36,8 +40,8 @@ class ClauseDetector:
 
         self.qa_pipeline = pipeline(
             task="question-answering",
-            model=model,
-            tokenizer=tokenizer,
+            model=self.model,
+            tokenizer=self.tokenizer,
             device=0 if self.config.device == "cuda" else -1,
         )
 
@@ -76,16 +80,138 @@ class ClauseDetector:
                 stride=self.config.stride,
             )
 
+        detected_clauses = self._deduplicate_clauses(detected_clauses)
+        detected_clauses = self._sort_clauses(detected_clauses)
+
+        return detected_clause
+
             for chunk in chunks:
 
                 #
                 # QA inference will be added
                 # in the next commit.
                 #
-                pass
+                for question in self.questions:
+                    result=self.qa_pipeline(
+                    question=question["prompt"],
+                    context=chunk["text"],
+                    )
+
+                    #
+                # Ignore weak predictions.
+                #
+                    if result["score"] < self.config.detection_threshold:
+                        continue
+                    
+                    answer = result["answer"].strip()
+
+                #
+                # Ignore empty or meaningless answers.
+                #
+                if not answer:
+                    continue
+
+                if answer.lower() in {"", "[cls]", "[sep]"}:
+                    continue
+
+                clause = DetectedClause(
+                    clause_id=(
+                        f"page_{page.page_number}_"
+                        f"{question['clause_type']}_"
+                        f"{len(detected_clauses)+1}"
+                    ),
+                    category=question["display_name"],
+                    text=answer,
+                    confidence=result["score"],
+                    page_number=page.page_number,
+                    spans=ClauseSpan(
+                        start_char=chunk["start_char"] + result["start"],
+                        end_char=chunk["start_char"] + result["end"],
+                        text=answer,
+                        confidence=result["score"],
+                    )
+
+                    clause = DetectedClause(
+                        clause_id=(
+                            f"page_{page.page_number}_"
+                            f"{question['clause_type']}_"
+                            f"{len(detected_clauses) + 1}"
+                        ),
+                        category=question["display_name"],
+                        text=answer,
+                        confidence=result["score"],
+                        page_number=page.page_number,
+                        spans=[span],      # List[ClauseSpan]
+                    )
+
+                )
+
+                detected_clauses.append(clause)
+
+                #
+                # Clause object creation will be
+                # implemented in the next step.
+                #
+                print(
+                    f"[{question['display_name']}] "
+                    f"{result['score']:.3f} -> "
+                    f"{result['answer']}"
+                )
+                #pass
+
+            detected_clauses = self._deduplicate_clauses(detected_clauses)
+            detected_clauses = self._sort_clauses(detected_clauses)
 
             return detected_clauses
-        
+
+    def _deduplicate_clauses(
+        self,
+        clauses: List[DetectedClause],
+    ) -> List[DetectedClause]:
+        """
+        Remove duplicate clause detections caused by overlapping chunks.
+
+        If multiple detections have the same category and nearly identical
+        text, keep the one with the highest confidence.
+        """
+
+        unique = {}
+
+        for clause in clauses:
+
+            key = (
+                clause.category,
+                clause.text.strip().lower(),
+            )
+
+            if key not in unique:
+                unique[key] = clause
+                continue
+
+            if clause.confidence > unique[key].confidence:
+                unique[key] = clause
+
+        return list(unique.values())
+
+
+    def _sort_clauses(
+        self,
+        clauses: List[DetectedClause],
+    ) -> List[DetectedClause]:
+        """
+        Sort clauses by page number and character position.
+        """
+
+        return sorted(
+            clauses,
+            key=lambda clause: (
+                clause.page_number,
+                clause.spans[0].start_char if clause.spans else 0,
+            ),
+        )
+
+
+
         #raise NotImplementedError(
         #    "Clause detection implementation will be added next."
         #)
