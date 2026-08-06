@@ -31,12 +31,24 @@ def chunk_text_with_stride(
     chunks = []
 
     for i in range(len(encoding["input_ids"])):
-        offsets = encoding["offset_mapping"][i]
+        #offsets = encoding["offset_mapping"][i]
 
-        start_char = offsets[0][0]
+        #start_char = offsets[0][0]
 
-        end_char = offsets[-1][1]
+        #end_char = offsets[-1][1]
 
+        valid_offsets = [
+            offset
+            for offset in encoding["offset_mapping"][i]
+            if offset != (0, 0)
+        ]
+
+        if not valid_offsets:
+            continue
+
+        start_char = valid_offsets[0][0]
+        end_char = valid_offsets[-1][1]
+        
         chunks.append(
             {
                 "input_ids": encoding["input_ids"][i],
