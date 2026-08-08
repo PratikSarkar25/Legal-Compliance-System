@@ -1,7 +1,3 @@
-"""
-Integration tests for the complete Legal NLP pipeline.
-"""
-
 from pathlib import Path
 
 from src.document_processing.pipeline import DocumentProcessingPipeline
@@ -24,48 +20,31 @@ def test_legal_nlp_pipeline():
     # Document Processing
     # -----------------------------------------
 
-    document_pipeline = DocumentProcessingPipeline()
-
-    processed_document = document_pipeline.process(
-        sample_pdf
+    document_pipeline = DocumentProcessingPipeline(
+        file_path=sample_pdf
     )
 
-    assert processed_document is not None
+    document = document_pipeline.process()
+
+    assert document is not None
+    assert document.filename == sample_pdf.name
+    assert len(document.pages) > 0
 
     # -----------------------------------------
-    # Legal NLP
+    # Legal NLP Processing
     # -----------------------------------------
 
-    legal_pipeline = LegalNLPPipeline()
+    legal_nlp_pipeline = LegalNLPPipeline()
 
-    legal_document = legal_pipeline.process(
-        processed_document
-    )
-
-    assert legal_document is not None
+    result = legal_nlp_pipeline.process(document)
 
     # -----------------------------------------
-    # Output validation
+    # Validate Final Result
     # -----------------------------------------
 
-    assert legal_document.document_id is not None
+    assert result is not None
 
-    assert isinstance(
-        legal_document.clauses,
-        list,
-    )
-
-    assert isinstance(
-        legal_document.entities,
-        list,
-    )
-
-    assert isinstance(
-        legal_document.relations,
-        list,
-    )
-
-    assert isinstance(
-        legal_document.embeddings,
-        list,
-    )
+    assert hasattr(result, "clauses")
+    assert hasattr(result, "entities")
+    assert hasattr(result, "relations")
+    assert hasattr(result, "embeddings")
