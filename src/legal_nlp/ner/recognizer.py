@@ -37,10 +37,28 @@ class NERRecognizer:
         self.config = config or LegalNLPConfig()
         self.model_loader = ModelLoader(self.config)
 
+        # Load the pretrained GLiNER model
+        self.ner_model = self.model_loader.load_ner_model()
+
+        # Entity types requested from GLiNER
+        self.entity_labels = [
+            "person",
+            "organization",
+            "location",
+            "date",
+            "money",
+            "duration",
+            "law",
+            "court",
+            "contract",
+            "legal obligation",
+        ]
+
+
         # tokenizer, model = self.model_loader.load_ner_model()
 
         # Placeholder pipeline setup until model weights/paths are defined
-        self.ner_pipeline = None  
+        #self.ner_pipeline = None  
 
     @torch.inference_mode()
     def extract_entities(

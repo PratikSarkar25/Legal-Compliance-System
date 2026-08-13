@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional, Tuple
+from gliner import GLiNER
 
 from sentence_transformers import SentenceTransformer
 from transformers import (
@@ -103,7 +104,7 @@ class ModelLoader:
     # Legal NER
     # =====================================================
 
-    def load_ner_model(self) -> Tuple[Any, Any]:
+    def load_ner_model(self) -> GLiNER:
 
         cache_key = "ner"
 
@@ -112,21 +113,17 @@ class ModelLoader:
 
         try:
 
-            tokenizer = AutoTokenizer.from_pretrained(
+            model = GLiNER.from_pretrained(
                 self.config.ner_model_name,
-                cache_dir=self.config.ner_dir,
+                cache_dir=str(self.config.ner_dir),
             )
 
-            model = AutoModelForTokenClassification.from_pretrained(
-                self.config.ner_model_name,
-                cache_dir=self.config.ner_dir,
-            ).to(self.config.device)
-
+            model = model.to(self.config.device)
             model.eval()
 
-            self._cache[cache_key] = (tokenizer, model)
+            self._cache[cache_key] = model
 
-            return tokenizer, model
+            return model
 
         except Exception as e:
             raise ModelLoadingError(

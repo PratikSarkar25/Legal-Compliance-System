@@ -31,7 +31,7 @@ class LegalNLPConfig(BaseModel):
     # ========================================================
 
     ner_model_name: str = Field(
-        default=""
+        default="urchade/gliner_medium-v2.1"
     )
 
     # ========================================================
