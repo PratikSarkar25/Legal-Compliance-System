@@ -43,3 +43,6 @@ neo4j/
 build/
 dist/
 *.egg-info/
+
+# Downloaded model caches
+models/*/
