@@ -67,19 +67,12 @@ class NERRecognizer:
     ) -> List[LegalEntity]:
         """
         Process segmented clauses and extract structured legal entities.
-
-        Parameters
-        ----------
-        clauses : List[DetectedClause]
-            The segmented and standardized clauses from the ClauseSegmenter.
-
-        Returns
-        -------
-        List[LegalEntity]
-            A flat list of extracted legal entity objects with associated clause metadata.
         """
+
         if clauses is None:
-            raise NERExtractionError("Input clauses cannot be None for entity extraction.")
+            raise NERExtractionError(
+                "Input clauses cannot be None for entity extraction."
+            )
 
         if not clauses:
             return []
@@ -88,15 +81,13 @@ class NERRecognizer:
 
         for clause in clauses:
             try:
-                # 1. Run entity recognition using the clause object for contextual metadata
                 clause_entities = self._recognize_entities(clause)
-
-                # 2. Extend the main entities collection
                 entities.extend(clause_entities)
 
             except Exception as e:
                 raise NERExtractionError(
-                    f"Failed to extract entities for clause {clause.clause_id}: {str(e)}"
+                    f"Failed to extract entities for clause "
+                    f"{clause.clause_id}: {str(e)}"
                 ) from e
 
         return entities
@@ -106,12 +97,45 @@ class NERRecognizer:
         clause: DetectedClause,
     ) -> List[LegalEntity]:
         """
-        Perform entity recognition inference on a single clause, utilizing its 
-        metadata (page number, clause ID, offsets) to construct LegalEntity objects.
+        Perform GLiNER inference on a single clause and convert
+        predictions into LegalEntity objects.
         """
+
         if not clause.text or not clause.text.strip():
             return []
-            
-        # Placeholder implementation returning an empty list until 
-        # the token classification pipeline mapping is finalized.
-        return []
+
+        try:
+            predictions = self.ner_model.predict_entities(
+                clause.text,
+                self.entity_labels,
+                threshold=self.config.ner_threshold,
+            )
+
+            entities: List[LegalEntity] = []
+
+            for index, prediction in enumerate(predictions):
+                entity_text = prediction["text"]
+                label = prediction["label"]
+                confidence = float(prediction["score"])
+                start_char = int(prediction["start"])
+                end_char = int(prediction["end"])
+
+                entity = LegalEntity(
+                    entity_id=f"{clause.clause_id}_entity_{index}",
+                    clause_id=clause.clause_id,
+                    text=entity_text,
+                    label=label,
+                    confidence=confidence,
+                    start_char=start_char,
+                    end_char=end_char,
+                )
+
+                entities.append(entity)
+
+            return entities
+
+        except Exception as e:
+            raise NERExtractionError(
+                f"NER inference failed for clause "
+                f"{clause.clause_id}: {str(e)}"
+            ) from e
