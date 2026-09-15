@@ -1,8 +1,5 @@
 """
-Clause Classifier Module.
-
-This module provides the ClauseClassifier class responsible for running
-pre-trained LEDGAR LegalBERT classification on segmented clauses.
+LEDGAR clause classification module.
 """
 
 from typing import Any, Dict, List
@@ -17,25 +14,17 @@ from src.legal_nlp.schemas import DetectedClause
 
 class ClauseClassifier:
     """
-    Classifies segmented clauses into standardized legal categories using
-    a pre-trained LEDGAR sequence classification model.
+    Classifies legal clauses using a pretrained 100-class LEDGAR classifier.
     """
 
     def __init__(
         self,
         config: LegalNLPConfig | None = None,
     ):
-        """
-        Initialize the ClauseClassifier.
-        """
         self.config = config or LegalNLPConfig()
-
         self.model_loader = ModelLoader(self.config)
 
-        # tokenizer, model = self.model_loader.load_ledgar_model()
-
-        # Will be initialized after enabling inference.
-        self.classifier_pipeline = None
+        self.tokenizer, self.model = self.model_loader.load_ledgar_model()
 
     @torch.inference_mode()
     def classify_clauses(
@@ -43,17 +32,7 @@ class ClauseClassifier:
         clauses: List[DetectedClause],
     ) -> List[DetectedClause]:
         """
-        Classify segmented clauses using the LEDGAR model.
-
-        Parameters
-        ----------
-        clauses : List[DetectedClause]
-            Segmented clauses produced by the ClauseSegmenter.
-
-        Returns
-        -------
-        List[DetectedClause]
-            Clauses enriched with LEDGAR classification results.
+        Add LEDGAR labels and confidence scores to detected clauses.
         """
 
         if clauses is None:
@@ -67,53 +46,59 @@ class ClauseClassifier:
         classified_clauses: List[DetectedClause] = []
 
         for clause in clauses:
-
             try:
+                prediction = self._classify_text(clause.text)
 
-                prediction = self._classify_text(
-                    clause.text,
-                )
-
-                #
-                # Preserve the CUAD category.
-                # Store LEDGAR prediction separately.
-                #
                 clause.classification_label = prediction["label"]
                 clause.classification_score = prediction["score"]
 
                 classified_clauses.append(clause)
 
-            except Exception as e:
-
+            except Exception as error:
                 raise ClauseClassificationError(
-                    f"Failed to classify clause "
-                    f"{clause.clause_id}: {e}"
-                ) from e
+                    f"Failed to classify clause {clause.clause_id}: {error}"
+                ) from error
 
         return classified_clauses
 
-    def _classify_text(
-        self,
-        text: str,
-    ) -> Dict[str, Any]:
+    @torch.inference_mode()
+    def _classify_text(self, text: str) -> Dict[str, Any]:
         """
-        Perform low-level text classification on a single clause.
+        Classify one clause using the LEDGAR model.
         """
 
         if not text or not text.strip():
-
             return {
                 "label": "UNKNOWN",
                 "score": 0.0,
             }
 
-        #
-        # Future implementation:
-        #
-        # return self.classifier_pipeline(text)[0]
-        #
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=self.config.truncation,
+            padding=False,
+            max_length=self.config.max_seq_length,
+        )
+
+        inputs = {
+            key: value.to(self.config.device)
+            for key, value in inputs.items()
+        }
+
+        outputs = self.model(**inputs)
+
+        probabilities = torch.softmax(outputs.logits, dim=-1)
+        predicted_id = int(torch.argmax(probabilities, dim=-1).item())
+        confidence = float(probabilities[0, predicted_id].item())
+
+        label = self.model.config.id2label.get(
+            predicted_id,
+            f"LABEL_{predicted_id}",
+        )
 
         return {
-            "label": "UNCLASSIFIED",
-            "score": 0.0,
+            "label": label,
+            "score": confidence,
+            "label_id": predicted_id,
         }

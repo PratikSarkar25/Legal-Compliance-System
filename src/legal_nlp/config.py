@@ -23,7 +23,7 @@ class LegalNLPConfig(BaseModel):
     # ========================================================
 
     ledgar_model_name: str = Field(
-        default="nlpaueb/legal-bert-base-uncased"
+        default="Jeswinpauldany/legalbert-clause-classifier"
     )
 
     # ========================================================
