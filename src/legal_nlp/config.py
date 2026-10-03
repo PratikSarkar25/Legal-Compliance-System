@@ -27,6 +27,14 @@ class LegalNLPConfig(BaseModel):
     )
 
     # ========================================================
+    # CONTRACT NLI
+    # ========================================================
+
+    contract_nli_model_name: str = Field(
+        default="Agreemind/contractnli-legalbert-nda-standard"
+    )
+
+    # ========================================================
     # Legal NER
     # ========================================================
 
@@ -41,6 +49,8 @@ class LegalNLPConfig(BaseModel):
     embedding_model_name: str = Field(
         default="BAAI/bge-m3"
     )
+
+    
 
     # ========================================================
     # Runtime
@@ -101,6 +111,8 @@ class LegalNLPConfig(BaseModel):
     cuad_dir: Path = Path("models/cuad")
 
     ledgar_dir: Path = Path("models/ledgar")
+
+    contract_nli_dir: Path = Path("models/contract_nli")
 
     ner_dir: Path = Path("models/ner")
 

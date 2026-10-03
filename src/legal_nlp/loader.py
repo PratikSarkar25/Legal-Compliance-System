@@ -101,6 +101,40 @@ class ModelLoader:
             ) from e
 
     # =====================================================
+    # Contract NLI
+    # =====================================================
+
+    def load_contract_nli_model(self) -> Tuple[Any, Any]:
+
+        cache_key = "contract_nli"
+
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        try:
+
+            tokenizer = AutoTokenizer.from_pretrained(
+                self.config.contract_nli_model_name,
+                cache_dir=self.config.contract_nli_dir,
+            )
+
+            model = AutoModelForSequenceClassification.from_pretrained(
+                self.config.contract_nli_model_name,
+                cache_dir=self.config.contract_nli_dir,
+            ).to(self.config.device)
+
+            model.eval()
+
+            self._cache[cache_key] = (tokenizer, model)
+
+            return tokenizer, model
+
+        except Exception as e:
+            raise ModelLoadingError(
+                f"Unable to load Contract NLI model: {e}"
+            ) from e
+
+    # =====================================================
     # Legal NER
     # =====================================================
 
